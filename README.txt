@@ -1,28 +1,15 @@
-AJAX MP3 Player Plugin
-Version 1.0
-By Joseph Moore
+AJAX MP3 Player
+Version up to 1.0 By Joseph Moore
+Newer version Kornel Misiejuk
+
 
 This is an AJAX MP3 player that uses PHP to read a folder of files on your server and builds an HTML5 audio player in Javascript. 
 
-Structure of the plugin
+Whats new:
+- subdirectories as plalists.
 
-- mp3player
- - player
-  + mp3playerplugin.js
-  - css
-   + styles.css
-   + blackandwhite.css
-  - images
-   + icons.png
-   + ajax-loader.gif
-   + ajax-loader2.gif
-  - php
-   + getsongs.php
-   - getid3
- - music
-  + MUSIC-GOES-HERE.txt
 
-INSTRUCTIONS
+-- Original INSTRUCTIONS up to version 1.00 ------
 
 1.) Copy plugin folder "mp3player" to the root folder of your site's HTML. 
 

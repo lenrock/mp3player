@@ -2,7 +2,7 @@
 
 require_once('getid3/getid3.php');
 
-$DirectoryToScan = '../../../' . $_GET['mp3Player-folder'];
+$DirectoryToScan = '../../../' . $_GET['mp3Player-folder'] . '/' . $_GET['mp3dir'];
 $audioType = $_GET['mp3Player-audioType'];
 
 $artist = $_GET['mp3Player-artist'];
@@ -15,7 +15,43 @@ $year = $_GET['mp3Player-year'];
 
 $totalCols = 0;
 
+$dirExist = 0;
+
 ?>
+
+<div id="header">
+select playlist:&nbsp;
+<select onchange="changePlaylist(this);">
+<?php
+
+$DirectoryToScan2 = '../../../' . $_GET['mp3Player-folder'];
+$results = scandir($DirectoryToScan2);
+
+foreach ($results as $result) {
+    if ($result === '.' or $result === '..') continue;
+
+
+    if (is_dir($DirectoryToScan2. '/' . $result)) {
+        if($result == $_GET['mp3dir'])
+        {
+            echo '<option selected="selected" value="' . $result . '">' . $result . '</option>';
+            $dirExist = 1;
+        }
+        else {
+            echo '<option  value="' . $result . '">' . $result . '</option>';
+        }
+    }
+}
+
+if($dirExist ==0)
+{
+ echo '<option selected="selected" value="      ">    </option>';
+}
+
+?>
+</select>
+
+</div>
 
 <audio id="mp3Player-player">
 	<source id="mp3Player-mp3" src="" />
@@ -96,7 +132,9 @@ $totalCols = 0;
 	</thead>
 	<tbody>
 <?php
-	
+	if($dirExist ==1)
+{
+       
 	$getID3 = new getID3;
 	
 	$files = scandir($DirectoryToScan);
@@ -113,13 +151,13 @@ $totalCols = 0;
 				set_time_limit(30);
 				$ThisFileInfo = $getID3->analyze($FullFileName);
 				getid3_lib::CopyTagsToComments($ThisFileInfo);
-				echo '<tr data-file="'.$ThisFileInfo['filename'].'">';
+				echo '<tr data-file="'.$_GET['mp3dir'].'/'.$ThisFileInfo['filename'].'">';
 				if($title == 'true'){
 					if($audioType == "mp3"){
 						if($ThisFileInfo['comments_html']['title']){
 							echo '<td class="title">'.$ThisFileInfo['comments_html']['title'][(count($ThisFileInfo['comments_html']['title'])-1)].'</td>';
 						} else {
-							echo '<td class="title">Unknown Song</td>';
+							echo '<td class="title">'.$ThisFileInfo['filename'].'</td>';
 						}
 					} else {
 						echo '<td class="title">'.$ThisFileInfo['filename'].'</td>';
@@ -168,15 +206,16 @@ $totalCols = 0;
 			
 		}
 	}
+
+}
 	
 	if($totalAudio == 0){
-		if($audioType == "mp3"){
-			echo '<tr class="no-mp3s"><td colspan="' . $totalCols . '">Your browser doesn\'t support OGG audio files, and all the songs for this player are OGGs. Perhaps one day browser-makers will stop being stupid and support all common audio formats, making this message unnecessary. In the meantime, you can use Firefox or Opera to listen to this content.</td></tr>';
-		} else {
-			echo '<tr class="no-oggs"><td colspan="' . $totalCols . '">Your browser doesn\'t support MP3 audio files, and all the songs for this player are MP3s. Perhaps one day browser-makers will stop being stupid and support all common audio formats, making this message unnecessary. In the meantime, you can use Chrome or Safari to listen to this content.</td></tr>';
-		}
+
+			echo '<tr class="no-mp3s"><td colspan="' . $totalCols . '">Brak plikow, lub katalogu lub przegladarka nie obsluguje tego trybu</td></tr>';
+
 	}
-		
+	
+    	
 ?>
 	</tbody>
 </table>
