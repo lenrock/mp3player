@@ -17,71 +17,25 @@ $totalCols = 0;
 
 $dirExist = 0;
 
-?>
-
-<div id="header">
-select playlist:&nbsp;
-<select onchange="changePlaylist(this);">
-<?php
 
 $DirectoryToScan2 = '../../../' . $_GET['mp3Player-folder'];
 $results = scandir($DirectoryToScan2);
 
 foreach ($results as $result) {
-    if ($result === '.' or $result === '..') continue;
-
-
     if (is_dir($DirectoryToScan2. '/' . $result)) {
         if($result == $_GET['mp3dir'])
         {
-            echo '<option selected="selected" value="' . $result . '">' . $result . '</option>';
             $dirExist = 1;
-        }
-        else {
-            echo '<option  value="' . $result . '">' . $result . '</option>';
         }
     }
 }
-
-if($dirExist ==0)
-{
- echo '<option selected="selected" value="      ">    </option>';
-}
+ 
 
 ?>
-</select>
 
-</div>
-
-<audio id="mp3Player-player">
-	<source id="mp3Player-mp3" src="" />
-	<p class="no-html5">Your browser doesn\'t support HTML5 audio</p>
-</audio>
-
-<div id="mp3Player-controls" class="mp3Player-group playerControls">
-	<div id="mp3Player-buttons-container">
-		<button id="mp3Player-prev" class="mp3controls disabled">Prev</button>
-		<div id="mp3Player-play-pause">
-			<button id="mp3Player-play" class="mp3controls">Play</button>
-			<button id="mp3Player-pause" class="mp3controls display-off">Pause</button>
-		</div>
-		<button id="mp3Player-next" class="mp3controls disabled">Next</button>
-	</div>
-
-	<div id="mp3Player-progress-container" class="mp3Player-group progressContainer">
-		<span id="mp3Player-currentTime"></span>
-		<div id="mp3Player-progress" class="loaded"></div>
-		<span id="mp3Player-remainingTime"></span>
-	</div>
-
-	<div id="mp3Player-volume-container" class="mp3Player-group">
-		<span id="mp3Player-min-volume"></span>
-		<div id="mp3Player-volume"></div>
-		<span id="mp3Player-max-volume"></span>
-	</div>
-</div>
 
 <table class="sortable" id="mp3Player-table">
+
 	<colgroup>
 	<?php if($title == 'true'){ $totalCols++; ?>
 		<col class="title" />
@@ -151,16 +105,16 @@ if($dirExist ==0)
 				set_time_limit(30);
 				$ThisFileInfo = $getID3->analyze($FullFileName);
 				getid3_lib::CopyTagsToComments($ThisFileInfo);
-				echo '<tr data-file="'.$_GET['mp3dir'].'/'.$ThisFileInfo['filename'].'">';
+				echo '<tr data-file="'.$_GET['mp3dir'].'/'.$file.'">';
 				if($title == 'true'){
 					if($audioType == "mp3"){
 						if($ThisFileInfo['comments_html']['title']){
 							echo '<td class="title">'.$ThisFileInfo['comments_html']['title'][(count($ThisFileInfo['comments_html']['title'])-1)].'</td>';
 						} else {
-							echo '<td class="title">'.$ThisFileInfo['filename'].'</td>';
+							echo '<td class="title">'.$file.'</td>';
 						}
 					} else {
-						echo '<td class="title">'.$ThisFileInfo['filename'].'</td>';
+						echo '<td class="title">'.$file.'</td>';
 					}
 				}
 				if($artist == 'true'){
