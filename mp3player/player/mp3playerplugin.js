@@ -1,5 +1,7 @@
 
-    // Begin variables
+// Begin variables
+
+
 
     // These attributes determine which ID3 tags you include in the player, true for present, false for absent
     var tags = {
@@ -28,6 +30,9 @@
     var player;
     var currentSong = 0;
     var mp3dir = getUrlVars()["mp3dir"];
+    //graphic analyzer
+
+    var equlizer_mode, analyzer_mode, audioContext, source, graphicEqualizer, splitter, analyzer, analyzerType, merger;
 
 
 
@@ -82,7 +87,7 @@
             $('#mp3Player-mp3').attr('src', src).appendTo(player.object);
             this.object[0].load();
 
-            this.object[0].addEventListener("canplay", function () {
+            this.object[0].addEventListener("loadedmetadata", function () {
                 playlist.rows.removeClass('current');
                 $(playlist.rows[currentSong]).addClass('current');
                 checkFirstLast();
@@ -95,9 +100,18 @@
 
         }
         this.playSong = function () {
+            
+            if(equlizer_mode || analyzer_mode)
+            {
+                startEqualizer();
+                updateAnalyzer();
+            }
             this.object[0].play();
         };
         this.pauseSong = function () {
+            if (equlizer_mode || analyzer_mode) {
+                stopEqualizer(); 
+            }
             this.object[0].pause();
         };
         this.nextSong = function () {
@@ -380,4 +394,158 @@
             }
         });
 
+        //graphic analyzer
+        equlizer_mode = false;
+
+        audioContext = (window.AudioContext ? new AudioContext() : (window.webkitAudioContext ? new webkitAudioContext() : new fakeAudioContext()));
+        graphicEqualizer = new GraphicalFilterEditorControl(1024, 44100, audioContext);
+        analyzerType = null;
+        analyzer = null;
+        splitter = audioContext.createChannelSplitter();
+        merger = audioContext.createChannelMerger();
+
+        document.getElementById("mp3player-analizer").addEventListener("change", updateAnalyzer);
+        document.getElementById("mp3player-equalizer").addEventListener("change", updateEqualizer);
+
     });
+
+
+
+    //fakeAudioContext was created only to act as a "null audio context", making at least the graph work in other browsers
+    function fakeAudioContext() {
+    }
+    fakeAudioContext.prototype = {
+        createChannelSplitter: function () {
+            return {};
+        },
+        createChannelMerger: function () {
+            return {};
+        },
+        createBufferSource: function () {
+            return {};
+        },
+        createBuffer: function (channels, filterLength, sampleRate) {
+            if (sampleRate === undefined)
+                return this.createBuffer(2, 1024, 44100);
+            return {
+                duration: filterLength / sampleRate,
+                gain: 1,
+                length: filterLength,
+                numberOfChannels: channels,
+                sampleRate: sampleRate,
+                data: (function () {
+                    var a = new Array(channels), i;
+                    for (i = channels - 1; i >= 0; i--)
+                        a[i] = new Float32Array(filterLength);
+                    return a;
+                })(),
+                getChannelData: function (index) { return this.data[index]; }
+            };
+        },
+        createConvolver: function () {
+            var mthis = this;
+            return {
+                buffer: null,
+                context: mthis,
+                normalize: true,
+                numberOfInputs: 1,
+                numberOfOutputs: 1
+            };
+        }
+    };
+
+
+    function cleanUpAnalyzer() {
+        if (analyzer) {
+            analyzer.stop();
+            analyzer.destroyControl();
+        }
+        splitter.disconnect(0);
+        splitter.disconnect(1);
+        if (analyzer) {
+            analyzer.analyzerL.disconnect(0);
+            analyzer.analyzerR.disconnect(0);
+            analyzerType = null;
+            analyzer = null;
+        }
+        merger.disconnect(0);
+        return true;
+    }
+
+    function startEqualizer() {
+
+        console.log('startEqualizer');
+        //Chrome now supports processing audio played over streamings (tested with Chrome v29.0.1547.76)
+        //If chkSample is checked, use the sample file's URL, otherwise, create a temporary URL for the chosen file
+        source = audioContext.createMediaElementSource($('#mp3Player-player')[0]);
+        graphicEqualizer.changeAudioContext(audioContext);
+        source.connect(graphicEqualizer.filter.convolver, 0, 0);
+       
+        return true;
+    }
+
+    function stopEqualizer() {
+        console.log('stopEqualizer');
+        //enableButtons(true);
+        if (source) {
+            //source.stop(0);
+            source.disconnect(0);
+            source = null;
+        }
+        graphicEqualizer.filter.convolver.disconnect(0);
+        //Free all created URL's only at safe moments!
+        //freeObjURLs();
+        return cleanUpAnalyzer();
+    }
+
+    function updateAnalyzer() {
+        analyzer_mode = document.getElementById("mp3player-analizer").checked ? true : false;
+       
+        if (analyzer_mode) {
+            if (!source) 
+                { startEqualizer(); }
+            else
+                { graphicEqualizer.filter.convolver.disconnect(0); }
+
+            analyzer = new Analyzer(audioContext, graphicEqualizer.filter);
+            analyzer.createControl(document.getElementById("analyzerPlaceholder"));
+
+            graphicEqualizer.filter.convolver.connect(splitter, 0, 0);
+            splitter.connect(analyzer.analyzerL, 0, 0);
+            splitter.connect(analyzer.analyzerR, 1, 0);
+
+            analyzer.analyzerL.connect(merger, 0, 0);
+            analyzer.analyzerR.connect(merger, 0, 1);
+
+            merger.connect(audioContext.destination, 0, 0);
+            return analyzer.start();
+        }
+        else {
+            if (source) {
+                graphicEqualizer.filter.convolver.connect(audioContext.destination, 0, 0);
+                return cleanUpAnalyzer();
+                if (!equlizer_mode) {
+                    stopEqualizer();
+                }
+            }
+        }
+    }
+    
+
+    function updateEqualizer() {
+        equlizer_mode = document.getElementById("mp3player-equalizer").checked ? true : false;
+
+        if (equlizer_mode) {
+
+            graphicEqualizer.createControl(document.getElementById("equalizerPlaceholder"));
+            if (!source) {
+                startEqualizer();
+            }
+        }
+        else {
+            graphicEqualizer.destroyControl(document.getElementById("equalizerPlaceholder"));
+            if (!analyzer_mode) {
+                stopEqualizer();
+            }
+        }
+    }

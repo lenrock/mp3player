@@ -209,11 +209,11 @@ GraphicalFilterEditorControl.prototype = {
 			this.mnuEditZones = null;
 			this.mnuNormalizeCurves = null;
 			this.mnuShowActual = null;
-			this.ctx = null;
+			//this.ctx = null;
 			this.rangeImage = null;
 			this.labelImage = null;
-			this.element.parentNode.removeChild(this.element);
-			this.element = null;
+			//this.element.parentNode.removeChild(this.element);
+			//this.element = null;
 		}
 		return true;
 	},
@@ -492,6 +492,6 @@ if (!("ontouchend" in document)) {
 	//do not use hover effect on tablets and other touch devices
 	var s = document.createElement("link");
 	s.setAttribute("rel", "stylesheet");
-	s.setAttribute("href", "GraphicalFilterEditorHover.css");
+	s.setAttribute("href", "mp3player/GraphicalFilterEditor/GraphicalFilterEditorHover.css");
 	document.head.appendChild(s);
 }

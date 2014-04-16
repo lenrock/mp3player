@@ -42,9 +42,7 @@ function freeze$(x) {
 	if (Object.freeze) Object.freeze(x);
 	return x;
 }
-function $(e) {
-	return document.getElementById(e);
-}
+
 function cancelEvent(e) {
 	if (e.stopPropagation)
 		e.stopPropagation();

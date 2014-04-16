@@ -6,6 +6,14 @@
 	<script type="text/javascript" src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
 	<script type="text/javascript" src="mp3player/player/mp3playerplugin.js"></script> 
     <script type="text/javascript" src="mp3player/player/jquery.tablesorter.min.js"></script> 
+
+    <link rel="stylesheet" href="mp3player/GraphicalFilterEditor/GraphicalFilterEditor.css" />
+	<script type="text/javascript" charset="utf-8" src="mp3player/GraphicalFilterEditor/Common.js"></script>
+	<script type="text/javascript" charset="utf-8" src="mp3player/GraphicalFilterEditor/FFTNR.js"></script>
+	<script type="text/javascript" charset="utf-8" src="mp3player/GraphicalFilterEditor/GraphicalFilterEditor.js"></script>
+	<script type="text/javascript" charset="utf-8" src="mp3player/GraphicalFilterEditor/GraphicalFilterEditorControl.js"></script>
+	<script type="text/javascript" charset="utf-8" src="mp3player/GraphicalFilterEditor/Analyzer.js"></script>
+	<script type="text/javascript" charset="utf-8" src="mp3player/GraphicalFilterEditor/AnalyzerWL.js"></script>
 </head>
 <body>
 	
@@ -48,6 +56,16 @@ body{
 		<span id="mp3Player-max-volume"></span>
 	</div>
 </div>
+
+<div id="mp3player-addition-controls">
+<input type="checkbox" id="mp3player-equalizer" />
+<label for="mp3player-equalizer">eqaulizer</label>
+<input type="checkbox" id="mp3player-analizer" />
+<label for="mp3player-analizer">analizer</label>
+
+</div>
+
+<div id="equalizerPlaceholder"></div><div id="analyzerPlaceholder" style="vertical-align: top; display: inline-block; margin-left: 16px;"></div>
 
 <div id="mp3player-table-holder"></div>
 
