@@ -15,21 +15,6 @@ $year = $_GET['mp3Player-year'];
 
 $totalCols = 0;
 
-$dirExist = 0;
-
-
-$DirectoryToScan2 = '../../../' . $_GET['mp3Player-folder'];
-$results = scandir($DirectoryToScan2);
-
-foreach ($results as $result) {
-    if (is_dir($DirectoryToScan2. '/' . $result)) {
-        if($result == $_GET['mp3dir'])
-        {
-            $dirExist = 1;
-        }
-    }
-}
- 
 
 ?>
 
@@ -86,7 +71,7 @@ foreach ($results as $result) {
 	</thead>
 	<tbody>
 <?php
-	if($dirExist ==1)
+	if(file_exists($DirectoryToScan))
 {
        
 	$getID3 = new getID3;

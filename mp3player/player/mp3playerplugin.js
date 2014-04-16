@@ -211,7 +211,7 @@
             max: 1,
             step: .1,
             value: 1,
-            slide: function (e, ui) {
+            change: function (e, ui) {
                 // on slide, update audio volume value
                 player.object[0].volume = ui.value;
             }
@@ -326,11 +326,16 @@
             success: function (data) {
                 $('#mp3player-table-holder').html(data);
                 playlist = new Playlist($('#mp3Player-table'));
+                var status = null;
+                if (player != null)
+                    status = player.disabled;
                 player = new Player(playlist);
+                if (status != null)
+                    player.disabled = status;
                 $("#mp3Player-table").tablesorter();
                 $("#mp3Player-table").bind("sortEnd", function () {
                     resetOrder();
-                }); 
+                });
 
                 console.log('player objects = ' + player.object[0]);
                 if (player.object[0] != undefined && player.object[0] != null) {
@@ -361,5 +366,18 @@
 
         loadheader();
         loadPlaylist();
+
+        $('#mp3Player').on('mousewheel DOMMouseScroll', function (e) {
+            var o = e.originalEvent;
+            var delta = o && (o.wheelDelta || (o.detail && -o.detail));
+
+            if (delta) {
+                e.preventDefault();
+
+                var step = $('#mp3Player-volume').slider("option", "step");
+                step *= delta < 0 ? -1 : 1;
+                $('#mp3Player-volume').slider("value", $('#mp3Player-volume').slider("value") + step);
+            }
+        });
 
     });
