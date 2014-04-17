@@ -32,7 +32,7 @@
     var mp3dir = getUrlVars()["mp3dir"];
     //graphic analyzer
 
-    var equlizer_mode, analyzer_mode, audioContext, source, graphicEqualizer, splitter, analyzer, analyzerType, merger;
+    var equlizer_mode, analyzer_mode, contextEnable, audioContext, source, graphicEqualizer, splitter, analyzer, analyzerType, merger;
 
 
 
@@ -72,7 +72,7 @@
 
     function Player(playlist) {
         console.log('New player created');
-        this.totalSongs = playlist.rows.length;
+        this.totalSongs = playlist ? playlist.rows.length : 0;
         this.currentSong = 0;
         this.object = $('#mp3Player-player');
         this.played = false;
@@ -87,31 +87,19 @@
             $('#mp3Player-mp3').attr('src', src).appendTo(player.object);
             this.object[0].load();
 
-            this.object[0].addEventListener("loadedmetadata", function () {
-                playlist.rows.removeClass('current');
-                $(playlist.rows[currentSong]).addClass('current');
-                checkFirstLast();
-                $('#mp3Player-play').removeClass('disabled').addClass('display-off');
-                $('#mp3Player-pause').removeClass('disabled').removeClass('display-off');
-                $('#mp3Player-progress').addClass('loaded');
-                player.disabled = false;
-                player.playSong();
-            }, true);
-
+            //rest of load is in evet loadedmetadata
         }
         this.playSong = function () {
             
-            if(equlizer_mode || analyzer_mode)
-            {
-                startEqualizer();
-                updateAnalyzer();
-            }
+           
+            startSource();
+            updateAnalyzer();
+            
             this.object[0].play();
         };
         this.pauseSong = function () {
-            if (equlizer_mode || analyzer_mode) {
-                stopEqualizer(); 
-            }
+            
+            stopSource(); 
             this.object[0].pause();
         };
         this.nextSong = function () {
@@ -216,7 +204,7 @@
         var next = $('#mp3Player-next');
         var play = $('#mp3Player-play');
         var pause = $('#mp3Player-pause');
-
+     
     
 
         // create volume slider
@@ -290,25 +278,17 @@
             }
         });
 
-       
-    }
+        $('#mp3Player').on('mousewheel DOMMouseScroll', function (e) {
+            var o = e.originalEvent;
+            var delta = o && (o.wheelDelta || (o.detail && -o.detail));
 
-    function init(rows) {
+            if (delta) {
+                e.preventDefault();
 
-        var current = $('#mp3Player-currentTime');
-        var remaining = $('#mp3Player-remainingTime');
-        var progress = $('#mp3Player-progress');
-        // set clickable on songs
-        rows.each(function () {
-            $(this).click(function () {
-                if ($(this).hasClass('no-mp3s') == false) {
-                    if (player.disabled == false) {
-                        player.loadSong($(this).index());
-                    } else if (player.disabled == true && player.played == false) {
-                        player.loadSong($(this).index());
-                    }
-                }
-            });
+                var step = $('#mp3Player-volume').slider("option", "step");
+                step *= delta < 0 ? -1 : 1;
+                $('#mp3Player-volume').slider("value", $('#mp3Player-volume').slider("value") + step);
+            }
         });
 
         // go to next song on end of song
@@ -331,7 +311,18 @@
             }
 
         }, true);
-    
+
+        // loadcomplete
+        player.object[0].addEventListener("loadedmetadata", function () {
+            playlist.rows.removeClass('current');
+            $(playlist.rows[currentSong]).addClass('current');
+            checkFirstLast();
+            $('#mp3Player-play').removeClass('disabled').addClass('display-off');
+            $('#mp3Player-pause').removeClass('disabled').removeClass('display-off');
+            $('#mp3Player-progress').addClass('loaded');
+            player.disabled = false;
+            player.playSong();
+        }, true);
     }
 
     function loadPlaylist() {
@@ -340,21 +331,33 @@
             success: function (data) {
                 $('#mp3player-table-holder').html(data);
                 playlist = new Playlist($('#mp3Player-table'));
+
+                //update player object
                 var status = null;
                 if (player != null)
                     status = player.disabled;
                 player = new Player(playlist);
                 if (status != null)
                     player.disabled = status;
+
+                //update sortable on playlist
                 $("#mp3Player-table").tablesorter();
                 $("#mp3Player-table").bind("sortEnd", function () {
                     resetOrder();
                 });
 
-                console.log('player objects = ' + player.object[0]);
-                if (player.object[0] != undefined && player.object[0] != null) {
-                    init(playlist.rows);
-                }
+                // set clickable on songs
+                playlist.rows.each(function () {
+                    $(this).click(function () {
+                        if ($(this).hasClass('no-mp3s') == false) {
+                            if (player.disabled == false) {
+                                player.loadSong($(this).index());
+                            } else if (player.disabled == true && player.played == false) {
+                                player.loadSong($(this).index());
+                            }
+                        }
+                    });
+                });
             }
         });
 
@@ -373,6 +376,7 @@
     jQuery(document).ready(function ($) {
         mp3player = $('#mp3Player');
         musicFolder = mp3player.attr('data-folder');
+        player = new Player(null);
         initGlobal();
         document.title = "Playlist: " + mp3dir;
 
@@ -381,134 +385,102 @@
         loadheader();
         loadPlaylist();
 
-        $('#mp3Player').on('mousewheel DOMMouseScroll', function (e) {
-            var o = e.originalEvent;
-            var delta = o && (o.wheelDelta || (o.detail && -o.detail));
 
-            if (delta) {
-                e.preventDefault();
-
-                var step = $('#mp3Player-volume').slider("option", "step");
-                step *= delta < 0 ? -1 : 1;
-                $('#mp3Player-volume').slider("value", $('#mp3Player-volume').slider("value") + step);
-            }
-        });
 
         //graphic analyzer
-        equlizer_mode = false;
 
-        audioContext = (window.AudioContext ? new AudioContext() : (window.webkitAudioContext ? new webkitAudioContext() : new fakeAudioContext()));
-        graphicEqualizer = new GraphicalFilterEditorControl(1024, 44100, audioContext);
-        analyzerType = null;
-        analyzer = null;
-        splitter = audioContext.createChannelSplitter();
-        merger = audioContext.createChannelMerger();
 
-        document.getElementById("mp3player-analizer").addEventListener("change", updateAnalyzer);
-        document.getElementById("mp3player-equalizer").addEventListener("change", updateEqualizer);
+        audioContext = (window.AudioContext ? new AudioContext() : (window.webkitAudioContext ? new webkitAudioContext() : null));
+
+
+        if (audioContext) {
+            $("#mp3player-audiocontext-options").show();
+            graphicEqualizer = new GraphicalFilterEditorControl(1024, 44100, audioContext);
+            analyzerType = null;
+            analyzer = null;
+            splitter = audioContext.createChannelSplitter();
+            merger = audioContext.createChannelMerger();
+
+            updateEqualizer();
+            updateAnalyzer();
+
+            document.getElementById("mp3player-analizer").addEventListener("change", updateAnalyzer);
+            document.getElementById("mp3player-equalizer").addEventListener("change", updateEqualizer);
+        }
+        else {
+            $("#mp3player-audiocontext-options").hide();
+        }
+
 
     });
 
 
 
-    //fakeAudioContext was created only to act as a "null audio context", making at least the graph work in other browsers
-    function fakeAudioContext() {
-    }
-    fakeAudioContext.prototype = {
-        createChannelSplitter: function () {
-            return {};
-        },
-        createChannelMerger: function () {
-            return {};
-        },
-        createBufferSource: function () {
-            return {};
-        },
-        createBuffer: function (channels, filterLength, sampleRate) {
-            if (sampleRate === undefined)
-                return this.createBuffer(2, 1024, 44100);
-            return {
-                duration: filterLength / sampleRate,
-                gain: 1,
-                length: filterLength,
-                numberOfChannels: channels,
-                sampleRate: sampleRate,
-                data: (function () {
-                    var a = new Array(channels), i;
-                    for (i = channels - 1; i >= 0; i--)
-                        a[i] = new Float32Array(filterLength);
-                    return a;
-                })(),
-                getChannelData: function (index) { return this.data[index]; }
-            };
-        },
-        createConvolver: function () {
-            var mthis = this;
-            return {
-                buffer: null,
-                context: mthis,
-                normalize: true,
-                numberOfInputs: 1,
-                numberOfOutputs: 1
-            };
-        }
-    };
-
-
     function cleanUpAnalyzer() {
-        if (analyzer) {
-            analyzer.stop();
-            analyzer.destroyControl();
+        if(audioContext)
+        {
+            if (analyzer) {
+                analyzer.stop();
+                analyzer.destroyControl();
+            }
+            splitter.disconnect(0);
+            splitter.disconnect(1);
+            if (analyzer) {
+                analyzer.analyzerL.disconnect(0);
+                analyzer.analyzerR.disconnect(0);
+                analyzerType = null;
+                analyzer = null;
+            }
+            merger.disconnect(0);
+            return true;
         }
-        splitter.disconnect(0);
-        splitter.disconnect(1);
-        if (analyzer) {
-            analyzer.analyzerL.disconnect(0);
-            analyzer.analyzerR.disconnect(0);
-            analyzerType = null;
-            analyzer = null;
-        }
-        merger.disconnect(0);
-        return true;
+        return false;
     }
 
-    function startEqualizer() {
-
-        console.log('startEqualizer');
-        //Chrome now supports processing audio played over streamings (tested with Chrome v29.0.1547.76)
-        //If chkSample is checked, use the sample file's URL, otherwise, create a temporary URL for the chosen file
-        source = audioContext.createMediaElementSource($('#mp3Player-player')[0]);
-        graphicEqualizer.changeAudioContext(audioContext);
-        source.connect(graphicEqualizer.filter.convolver, 0, 0);
+    function startSource() {
+        if(audioContext)
+        {
+            console.log('startSource AudioContext Mode');
+            source = audioContext.createMediaElementSource($('#mp3Player-player')[0]);
+            graphicEqualizer.changeAudioContext(audioContext);
+            source.connect(graphicEqualizer.filter.convolver, 0, 0);
        
-        return true;
+            return true;
+        }
+        return false;
     }
 
-    function stopEqualizer() {
-        console.log('stopEqualizer');
-        //enableButtons(true);
-        if (source) {
-            //source.stop(0);
-            source.disconnect(0);
-            source = null;
+    function stopSource() {
+        if(audioContext)
+        {
+            console.log('stopSource AudioContext Mode');
+            //enableButtons(true);
+            if (source) {
+                //source.stop(0);
+                source.disconnect(0);
+                source = null;
+            }
+            graphicEqualizer.filter.convolver.disconnect(0);
+            //Free all created URL's only at safe moments!
+            //freeObjURLs();
+            return cleanUpAnalyzer();
         }
-        graphicEqualizer.filter.convolver.disconnect(0);
-        //Free all created URL's only at safe moments!
-        //freeObjURLs();
-        return cleanUpAnalyzer();
+        return false;
     }
 
     function updateAnalyzer() {
         analyzer_mode = document.getElementById("mp3player-analizer").checked ? true : false;
-       
-        if (analyzer_mode) {
-            if (!source) 
-                { startEqualizer(); }
-            else
-                { graphicEqualizer.filter.convolver.disconnect(0); }
+        if(!source || !audioContext) return false;
 
-            analyzer = new Analyzer(audioContext, graphicEqualizer.filter);
-            analyzer.createControl(document.getElementById("analyzerPlaceholder"));
+        if (analyzer_mode) {
+
+            graphicEqualizer.filter.convolver.disconnect(0); 
+            
+
+            if (!analyzer) {
+                analyzer = new Analyzer(audioContext, graphicEqualizer.filter);
+                analyzer.createControl(document.getElementById("analyzerPlaceholder"));
+            }
 
             graphicEqualizer.filter.convolver.connect(splitter, 0, 0);
             splitter.connect(analyzer.analyzerL, 0, 0);
@@ -521,13 +493,8 @@
             return analyzer.start();
         }
         else {
-            if (source) {
                 graphicEqualizer.filter.convolver.connect(audioContext.destination, 0, 0);
                 return cleanUpAnalyzer();
-                if (!equlizer_mode) {
-                    stopEqualizer();
-                }
-            }
         }
     }
     
@@ -536,16 +503,10 @@
         equlizer_mode = document.getElementById("mp3player-equalizer").checked ? true : false;
 
         if (equlizer_mode) {
-
             graphicEqualizer.createControl(document.getElementById("equalizerPlaceholder"));
-            if (!source) {
-                startEqualizer();
-            }
+
         }
         else {
             graphicEqualizer.destroyControl(document.getElementById("equalizerPlaceholder"));
-            if (!analyzer_mode) {
-                stopEqualizer();
-            }
         }
     }
