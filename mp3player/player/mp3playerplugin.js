@@ -27,7 +27,7 @@
     var currentSong = 0;
     var mp3dir;
 
-    var  audioContext, source, graphicEqualizer, splitter, analyzer, merger;
+    var  audioContext, source, gain, graphicEqualizer, splitter, analyzer, merger;
 
 
     function Playlist(table) {
@@ -192,7 +192,11 @@
             value: 1,
             change: function (e, ui) {
                 // on slide, update audio volume value
-                player.object[0].volume = ui.value;
+                if(!audioContext)
+                    player.object[0].volume = ui.value;
+                else
+                    gain.gain.value = ui.value;
+
             }
         });
 
@@ -391,6 +395,7 @@
             splitter = audioContext.createChannelSplitter();
             merger = audioContext.createChannelMerger();
             source = audioContext.createMediaElementSource($('#mp3Player-player')[0]);
+            gain = audioContext.createGain();
 
             updateEqualizer();
             updateAnalyzer();
@@ -430,7 +435,8 @@
             console.log('startSource AudioContext Mode');
 
             graphicEqualizer.changeAudioContext(audioContext);
-            source.connect(graphicEqualizer.filter.convolver, 0, 0);
+            gain.connect(graphicEqualizer.filter.convolver,0,0);
+            source.connect(gain, 0, 0);
        
             return true;
         }
@@ -442,6 +448,7 @@
         {
             console.log('stopSource AudioContext Mode');
             source.disconnect(0);
+            gain.disconnect(0);
             graphicEqualizer.filter.convolver.disconnect(0);
 
             return cleanUpAnalyzer();
