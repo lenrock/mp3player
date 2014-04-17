@@ -1,12 +1,18 @@
 AJAX MP3 Player
 Version up to 1.0 By Joseph Moore
-Newer version Kornel Misiejuk
+Newer versions by Kornel Misiejuk
 
 
 This is an AJAX MP3 player that uses PHP to read a folder of files on your server and builds an HTML5 audio player in Javascript. 
 
-Whats new:
+What's new:
 - subdirectories as plalists.
+- equalizer and fft analyzer from GraphicalFilterEditor -> https://github.com/carlosrafaelgn/GraphicalFilterEditor
+- Better borwsers (like Desktop Fx and chrome) is using AudioContext, worse (but still html5 like Android) is using simple audio .
+
+Demo:
+     http://mp3player.lenrock.org/
+     music in example is CC (http://theslip.nin.com/ and http://music.hungrylucy.com/album/pulse-of-the-earth)
 
 
 -- Original INSTRUCTIONS up to version 1.00 ------
