@@ -1,8 +1,4 @@
 
-// Begin variables
-
-
-
     // These attributes determine which ID3 tags you include in the player, true for present, false for absent
     var tags = {
         artist: true,
@@ -29,21 +25,9 @@
     var playlist;
     var player;
     var currentSong = 0;
-    var mp3dir = getUrlVars()["mp3dir"];
-    //graphic analyzer
+    var mp3dir;
 
-    var equlizer_mode, analyzer_mode, contextEnable, audioContext, source, graphicEqualizer, splitter, analyzer, analyzerType, merger;
-
-
-
-    function changePlaylist(sender) {
-        mp3dir = sender.options[sender.selectedIndex].value;
-        document.title = "Playlist: " + mp3dir;
-
-        initUrl();
-        loadheader();
-        loadPlaylist();
-    }
+    var  audioContext, source, graphicEqualizer, splitter, analyzer, merger;
 
 
     function Playlist(table) {
@@ -90,8 +74,6 @@
             //rest of load is in evet loadedmetadata
         }
         this.playSong = function () {
-            
-           
             startSource();
             updateAnalyzer();
             
@@ -173,12 +155,7 @@
 
     function initUrl() {
         var tagsUrl = '';
-
-        if (testMp3()) {
-            url = 'mp3player/player/php/getsongs.php?mp3Player-folder=' + musicFolder + '&mp3Player-audioType=mp3&mp3dir=' + mp3dir;
-        } else {
-            url = 'mp3player/player/php/getoggs.php?mp3Player-folder=' + musicFolder + '&mp3Player-audioType=ogg&mp3dir=' + mp3dir;
-        }
+        url = 'mp3player/player/php/getsongs.php?mp3Player-folder=' + musicFolder + '&mp3Player-audioType=mp3&mp3dir=' + mp3dir;
 
         url_scandir = 'mp3player/player/php/getselect.php?mp3Player-folder=' + musicFolder + '&mp3dir=' + mp3dir;
 
@@ -266,14 +243,14 @@
 
         minvolume.click(function () {
             if (player.disabled == false) {
-                player.object[0].volume = 0;
+                //player.object[0].volume = 0;
                 volumeslider.slider('option', 'value', '0');
             }
         });
 
         maxvolume.click(function () {
             if (player.disabled == false) {
-                player.object[0].volume = 1;
+                //player.object[0].volume = 1;
                 volumeslider.slider('option', 'value', '1');
             }
         });
@@ -326,42 +303,47 @@
     }
 
     function loadPlaylist() {
-        $.ajax({
-            url: url,
-            success: function (data) {
-                $('#mp3player-table-holder').html(data);
-                playlist = new Playlist($('#mp3Player-table'));
+        if (testMp3()) {
+            $.ajax({
+                url: url,
+                success: function (data) {
+                    $('#mp3player-table-holder').html(data);
+                    playlist = new Playlist($('#mp3Player-table'));
 
-                //update player object
-                var status = null;
-                if (player != null)
-                    status = player.disabled;
-                player = new Player(playlist);
-                if (status != null)
-                    player.disabled = status;
+                    //update player object
+                    var status = null;
+                    if (player != null)
+                        status = player.disabled;
+                    player = new Player(playlist);
+                    if (status != null)
+                        player.disabled = status;
 
-                //update sortable on playlist
-                $("#mp3Player-table").tablesorter();
-                $("#mp3Player-table").bind("sortEnd", function () {
-                    resetOrder();
-                });
-
-                // set clickable on songs
-                playlist.rows.each(function () {
-                    $(this).click(function () {
-                        if ($(this).hasClass('no-mp3s') == false) {
-                            if (player.disabled == false) {
-                                player.loadSong($(this).index());
-                            } else if (player.disabled == true && player.played == false) {
-                                player.loadSong($(this).index());
-                            }
-                        }
+                    //update sortable on playlist
+                    $("#mp3Player-table").tablesorter();
+                    $("#mp3Player-table").bind("sortEnd", function () {
+                        resetOrder();
                     });
-                });
-            }
-        });
 
-        $('#mp3player-table-holder').html('<span id="mp3Player-loading">Loading...</span>');
+                    // set clickable on songs
+                    playlist.rows.each(function () {
+                        $(this).click(function () {
+                            if ($(this).hasClass('no-mp3s') == false) {
+                                if (player.disabled == false) {
+                                    player.loadSong($(this).index());
+                                } else if (player.disabled == true && player.played == false) {
+                                    player.loadSong($(this).index());
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+
+            $('#mp3player-table-holder').html('<span id="mp3Player-loading">Loading...</span>');
+        }
+        else {
+            $('#mp3player-table-holder').html('<span id="mp3Player-no mp3 format">This browser cannot play mp3</span>');
+        }
     }
 
     function loadheader() {
@@ -373,25 +355,33 @@
         });
     }
 
+    function changePlaylist(sender) {
+        if (sender)
+            mp3dir = sender.options[sender.selectedIndex].value;
+        else
+            mp3dir = null;
+
+        document.title = "Playlist: " + mp3dir;
+
+        initUrl();
+        loadheader();
+        loadPlaylist();
+    }
+
     jQuery(document).ready(function ($) {
         mp3player = $('#mp3Player');
         musicFolder = mp3player.attr('data-folder');
         player = new Player(null);
         initGlobal();
-        document.title = "Playlist: " + mp3dir;
+        initAudioContext();
 
-        initUrl();
+        changePlaylist(null);
 
-        loadheader();
-        loadPlaylist();
+    });
 
-
-
-        //graphic analyzer
-
-
+    function initAudioContext() {
+        //graphic analyzer and equlizer based on audiocontext
         audioContext = (window.AudioContext ? new AudioContext() : (window.webkitAudioContext ? new webkitAudioContext() : null));
-
 
         if (audioContext) {
             $("#mp3player-audiocontext-options").show();
@@ -400,6 +390,7 @@
             analyzer = null;
             splitter = audioContext.createChannelSplitter();
             merger = audioContext.createChannelMerger();
+            source = audioContext.createMediaElementSource($('#mp3Player-player')[0]);
 
             updateEqualizer();
             updateAnalyzer();
@@ -410,11 +401,7 @@
         else {
             $("#mp3player-audiocontext-options").hide();
         }
-
-
-    });
-
-
+    }
 
     function cleanUpAnalyzer() {
         if(audioContext)
@@ -438,10 +425,10 @@
     }
 
     function startSource() {
-        if(audioContext)
-        {
+        if(audioContext) {
+
             console.log('startSource AudioContext Mode');
-            source = audioContext.createMediaElementSource($('#mp3Player-player')[0]);
+
             graphicEqualizer.changeAudioContext(audioContext);
             source.connect(graphicEqualizer.filter.convolver, 0, 0);
        
@@ -454,22 +441,16 @@
         if(audioContext)
         {
             console.log('stopSource AudioContext Mode');
-            //enableButtons(true);
-            if (source) {
-                //source.stop(0);
-                source.disconnect(0);
-                source = null;
-            }
+            source.disconnect(0);
             graphicEqualizer.filter.convolver.disconnect(0);
-            //Free all created URL's only at safe moments!
-            //freeObjURLs();
+
             return cleanUpAnalyzer();
         }
         return false;
     }
 
     function updateAnalyzer() {
-        analyzer_mode = document.getElementById("mp3player-analizer").checked ? true : false;
+        var analyzer_mode = document.getElementById("mp3player-analizer").checked ? true : false;
         if(!source || !audioContext) return false;
 
         if (analyzer_mode) {
@@ -500,7 +481,7 @@
     
 
     function updateEqualizer() {
-        equlizer_mode = document.getElementById("mp3player-equalizer").checked ? true : false;
+        var equlizer_mode = document.getElementById("mp3player-equalizer").checked ? true : false;
 
         if (equlizer_mode) {
             graphicEqualizer.createControl(document.getElementById("equalizerPlaceholder"));

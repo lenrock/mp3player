@@ -150,7 +150,7 @@ $totalCols = 0;
 	
 	if($totalAudio == 0){
 
-			echo '<tr class="no-mp3s"><td colspan="' . $totalCols . '">Brak plikow, lub katalogu lub przegladarka nie obsluguje tego trybu</td></tr>';
+			echo '<tr class="no-mp3s"><td colspan="' . $totalCols . '">No files to play</td></tr>';
 
 	}
 	
