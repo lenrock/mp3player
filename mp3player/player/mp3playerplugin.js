@@ -489,5 +489,6 @@
         }
         else {
             graphicEqualizer.destroyControl(document.getElementById("equalizerPlaceholder"));
+            $("#equalizerPlaceholder").html("");
         }
     }

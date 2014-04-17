@@ -209,7 +209,7 @@ GraphicalFilterEditorControl.prototype = {
 			this.mnuEditZones = null;
 			this.mnuNormalizeCurves = null;
 			this.mnuShowActual = null;
-			//this.ctx = null;
+			this.ctx = null;
 			this.rangeImage = null;
 			this.labelImage = null;
 			//this.element.parentNode.removeChild(this.element);
